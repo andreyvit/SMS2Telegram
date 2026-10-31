@@ -88,3 +88,11 @@ crashlytics-build.properties
 
 # End of file
 
+
+# Keep the Gradle wrapper reproducible; exclude local secrets and migration data.
+!gradle/wrapper/gradle-wrapper.jar
+.env
+.env.*
+signing-password
+migration.json
+*.ab

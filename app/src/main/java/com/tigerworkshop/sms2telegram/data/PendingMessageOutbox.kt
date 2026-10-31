@@ -1,7 +1,6 @@
 package com.tigerworkshop.sms2telegram.data
 
 import android.content.Context
-import androidx.core.content.edit
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -89,8 +88,8 @@ class PendingMessageOutbox(context: Context) {
     }
 
     private fun saveQueueLocked(queue: JSONArray) {
-        prefs.edit(commit = true) {
-            putString(KEY_PENDING_MESSAGES, queue.toString())
+        check(prefs.edit().putString(KEY_PENDING_MESSAGES, queue.toString()).commit()) {
+            "Unable to persist SMS outbox"
         }
     }
 

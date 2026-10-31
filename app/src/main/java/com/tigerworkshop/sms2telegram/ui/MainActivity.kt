@@ -184,6 +184,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        com.tigerworkshop.sms2telegram.data.RecoveryReceiver.recover(applicationContext)
         updateLastStatus()
 
         // Refresh permission status in case user granted permission in settings

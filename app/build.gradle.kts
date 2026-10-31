@@ -8,22 +8,24 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.tigerworkshop.sms2telegram"
+        applicationId = "com.andreyvit.homesms"
         minSdk = 21
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.3.1"
+        versionCode = 8
+        versionName = "1.3.1-fwd.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    testBuildType = "release"
+
     buildTypes {
         release {
             // Enables code-related app optimization.
-            isMinifyEnabled = true
+            isMinifyEnabled = false
 
             // Enables resource shrinking.
-            isShrinkResources = true
+            isShrinkResources = false
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

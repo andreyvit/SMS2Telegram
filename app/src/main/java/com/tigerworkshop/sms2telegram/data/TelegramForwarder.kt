@@ -18,7 +18,8 @@ class TelegramForwarder(
         chatId: String,
         message: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        val safeMessage = message.take(MAX_MESSAGE_LENGTH)
+        require(message.length <= MAX_MESSAGE_LENGTH) { "Message must be split before delivery" }
+        val safeMessage = message
         val url = "https://api.telegram.org/bot${token}/sendMessage"
         val body = FormBody.Builder()
             .add("chat_id", chatId)
@@ -32,7 +33,7 @@ class TelegramForwarder(
 
         return@withContext try {
             client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
+                if (response.isSuccessful && JSONObject(response.body?.string().orEmpty()).optBoolean("ok")) {
                     Result.success(Unit)
                 } else {
                     Result.failure(
@@ -45,6 +46,8 @@ class TelegramForwarder(
             }
         } catch (ioe: IOException) {
             Result.failure(ioe)
+        } catch (invalidResponse: org.json.JSONException) {
+            Result.failure(IOException("Invalid Telegram response", invalidResponse))
         }
     }
 

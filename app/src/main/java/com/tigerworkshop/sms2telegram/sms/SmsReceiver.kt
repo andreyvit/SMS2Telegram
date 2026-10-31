@@ -48,7 +48,7 @@ class SmsReceiver : BroadcastReceiver() {
                 if (subscriptionInfoList != null) {
                     for (subscriptionInfo in subscriptionInfoList) {
                         if (subscriptionInfo.simSlotIndex == slotIndex) {
-                            val carrierName = subscriptionInfo.carrierName?.toString()
+                            val carrierName = listOfNotNull(subscriptionInfo.displayName?.toString(), subscriptionInfo.carrierName?.toString()).filter { it.isNotBlank() }.distinct().joinToString(" / ")
                             if (!carrierName.isNullOrBlank()) {
                                 return carrierName
                             }
@@ -94,27 +94,34 @@ class SmsReceiver : BroadcastReceiver() {
             return
         }
 
-        val simSlotIndex = intent.extras?.getInt("android.telephony.extra.SLOT_INDEX", -1) ?: -1
+        val subscriptionId = listOf("android.telephony.extra.SUBSCRIPTION_INDEX", "subscription")
+            .firstNotNullOfOrNull { key -> intent.getIntExtra(key, -1).takeIf { it >= 0 } }
+        val subscriptions = try {
+            getSystemService(appContext, SubscriptionManager::class.java)?.activeSubscriptionInfoList.orEmpty()
+        } catch (_: SecurityException) { emptyList() }
+        val slotFromSubscription = subscriptions.firstOrNull { it.subscriptionId == subscriptionId }?.simSlotIndex
+        val simSlotIndex = slotFromSubscription ?: listOf("android.telephony.extra.SLOT_INDEX", "slot", "simSlot", "phone")
+            .firstNotNullOfOrNull { key -> intent.getIntExtra(key, -1).takeIf { it >= 0 } } ?: -1
+        val simLabel = if (simSlotIndex >= 0) "SIM ${simSlotIndex + 1}" else "SIM unknown"
         val simCarrierName = getSimCarrierName(appContext, repository, simSlotIndex)
 
         val sender = messages.firstOrNull()?.displayOriginatingAddress ?: "Unknown"
-        val body = messages.joinToString(separator = "\n") { it.displayMessageBody ?: "" }
+        val body = messages.joinToString(separator = "") { it.displayMessageBody ?: "" }
         val formattedMessage = buildString {
             appendLine("From: $sender")
             if (simCarrierName != null) {
-                appendLine("SIM: #$simSlotIndex - $simCarrierName")
+                appendLine("$simLabel - $simCarrierName")
             } else {
-                appendLine("SIM: #$simSlotIndex")
+                appendLine(simLabel)
             }
             appendLine("Time: ${timeFormatter.format(Date())}")
             appendLine()
             append(body)
         }
 
-        outbox.enqueue(
-            sender = sender,
-            message = formattedMessage
-        )
+        messageChunks(formattedMessage).forEach { chunk ->
+            outbox.enqueue(sender = sender, message = chunk)
+        }
         val pendingCount = outbox.pendingCount()
         repository.saveLastForwardStatus(
             "${timeFormatter.format(Date())} - From $sender - Queued for delivery. $pendingCount pending message(s)."

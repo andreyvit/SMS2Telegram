@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SMS2Telegram</string>
+    <string name="app_name">SMS Fwd</string>
     <string name="hint_api_token">Telegram Bot API Token</string>
     <string name="hint_chat_id">Telegram Chat ID</string>
     <string name="label_save">Save Settings</string>
@@ -15,7 +15,7 @@
     <string name="permission_already_granted">Permission already granted.</string>
     <string name="label_forwarding_enabled">Enabled</string>
     <string name="test_message_button">Send Test Message</string>
-    <string name="test_message_body">SMS2Telegram Test Message.</string>
+    <string name="test_message_body">SMS Fwd setup test.</string>
     <string name="test_message_success">Test message sent to Telegram</string>
     <string name="test_message_error">Failed to send test message: %1$s</string>
     <string name="forwarding_disabled_status">Forwarding disabled. SMS will not be sent.</string>
@@ -24,10 +24,10 @@
     <string name="how_to_use">How to Use?</string>
     <string name="learn_how_to_obtain">Learn how to obtain them</string>
     <string name="step0_title">Welcome Onboard</string>
-    <string name="step0_message">Welcome to SMS2Telegram, the minimalist SMS to Telegram forwarder.\n\nIn two simple steps you will create your own Telegram Bot and get it up and running.</string>
+    <string name="step0_message">Welcome to Home SMS, the minimalist SMS to Telegram forwarder.\n\nIn two simple steps you will create your own Telegram Bot and get it up and running.</string>
     <string name="step0_message2">If someone asked you to install this app, STOP!\nIt could be a scam.</string>
     <string name="step0_continue">Continue</string>
-    <string name="welcome_title">Welcome to SMS2Telegram</string>
+    <string name="welcome_title">Welcome to Home SMS</string>
     <string name="welcome_message">This app requires your own Telegram Bot API Token and Chat ID to work.\nDo you want to read the instructions?</string>
     <string name="welcome_yes">Yes</string>
     <string name="welcome_no">No</string>

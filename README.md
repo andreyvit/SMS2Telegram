@@ -1,79 +1,74 @@
-# Minimalist Android SMS to Telegram Forwarder
+# SMS Fwd
 
-No Ads, No Pro/Premium, No Tracking, No Unnecessary Permissions.
+Android SMS-to-Telegram forwarder, based on [SMS2Telegram 1.3.1 source](https://github.com/imTigger/SMS2Telegram/tree/95a9ce580fe6a078e1eb36faa4d32b30506040b5).
 
-Free & Open Source under MIT license, built for common good.
+Package: `com.andreyvit.homesms`. Version: `1.3.1-fwd.1` (8).
 
-Support Android 5.0+ with no dependencies (Not even Play Store).
+Originally installed as **Home SMS**; this source revision uses the **SMS Fwd** display name. The separate package ID is retained for compatibility.
 
-![Screenshots](docs/images/cover.png)
+A small personal fork for a dedicated, always-charging SMS receiver. It keeps the original interface while improving delivery recovery and dual-SIM labels. The maintainer has used this version since October 3, 2026; it is not tested across all Android devices.
 
-## Motivation
+## Setup
 
-I use old Android phone to receive OTP from multiple numbers.
+1. Build and sign the APK below, then install it on your Android phone. This fork is a separate app from the original SMS2Telegram; it does not upgrade that installation.
+2. Create a bot with Telegram’s [@BotFather](https://t.me/BotFather). Keep the token private. Start a chat with your bot, or add it to the destination group/channel with permission to post.
+3. Open SMS Fwd, grant SMS permission, enter the bot token and destination chat ID, then validate the setup. **Find Chat ID** can discover chats from recent bot message updates; for a channel, enter its numeric chat ID manually if it is not listed.
+4. Enable forwarding. Enable **Show SIM Name** and grant phone-state permission for SIM labels. Rename your SIMs in Android settings to distinguish the lines.
+5. Allow background/autostart operation and unrestricted battery usage in your phone’s settings. Disable the old forwarder if you want to avoid duplicate delivery.
+6. Send a real SMS to each line while the phone is locked, and confirm both the Android inbox and Telegram destination. Also test recovery after temporarily disconnecting Wi-Fi.
 
-Existing apps from Play Store are full of ads, paywalls and some require unnecessary permissions.
+Existing inbox messages are not imported. Only newly received SMS is forwarded. MMS and RCS are not supported.
 
-Given that SMS OTP are sensitive data and leaking it poses critical security risk.
+## Changes from upstream
 
-I decide to make an FOSS Telegram to SMS Forwarder, and share it freely for common good.
+- Queue new deliveries with WorkManager APPEND_OR_REPLACE to avoid the KEEP completion race.
+- Recover pending messages on app opening, boot completion, package replacement, and a periodic recovery check.
+- Show one-based SIM numbers and Android SIM names; resolve subscription IDs before slot fallbacks.
+- Join multipart SMS without inserted newlines and split long Telegram messages without breaking surrogate pairs.
+- Check durable enqueue writes and Telegram JSON responses.
+- Disable Android backup and cleartext traffic.
 
-Everyone are free to review the code, compile it themselves and use it risk-free.
+The upstream MIT license and copyright are retained in LICENSE.md. Original setup documentation is in [docs/UPSTREAM_README.md](docs/UPSTREAM_README.md). Messages go to Telegram through the configured bot; Telegram receives their contents.
 
-## How to use
+## Security review
 
-In the next few steps, you will create your own Telegram Bot with official chatbot.
+Google Play Protect blocked the upstream downloadable 1.3.0 APK during setup. The reason was not established, and this project does not claim it was a false positive. This fork was built from source; that flagged APK is not included or used. See [SECURITY.md](SECURITY.md) for the review scope and remaining limitations.
 
-Therefore your data will not be shared with any third party servers.
+## Build
 
-### Step 1: Create Telegram Bot API Key
+Use JDK 17, Android SDK platform 36, and Android build tools 35.0.0. Android Studio is optional.
 
-Start a chat with [@BotFather](https://t.me/botfather)
+```sh
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+./gradlew testDebugUnitTest assembleRelease
+```
 
-You:
-> /newbot
+Unsigned APK: `app/build/outputs/apk/release/app-release-unsigned.apk`.
 
-BotFather:
-> Alright, a new bot. How are we going to call it? Please choose a name for your bot.
+To update the installed app, sign with its existing key. For your own installation, generate and keep your own signing key. The example below assumes a key alias `home-sms` and private files stored outside the repository. Keep a secure backup: a different key cannot update an existing installation in place.
 
-You:
-> SMS2Telegram
+```sh
+"$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+  --ks "$HOME/.local/share/home-sms-forwarder/signing.jks" \
+  --ks-key-alias home-sms \
+  --ks-pass "file:$HOME/.local/share/home-sms-forwarder/signing-password" \
+  --out app/build/outputs/apk/release/home-sms.apk \
+  app/build/outputs/apk/release/app-release-unsigned.apk
+```
 
-BotFather:
-> Good. Now let's choose a username for your bot. It must end in `bot`. Like this, for example: TetrisBot or tetris_bot.
+Increase versionCode for a future release. Bot credentials are configured on the device and are not included here.
 
-You:
-> SMS2TelegramDemoBot
+## Testing and device setup
 
-BotFather:
-> Done! Congratulations on your new bot. You will find it at t.me/SMS2TelegramDemoBot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+Unit tests cover Unicode message splitting. The instrumentation tests in `HomeSmsDeviceTest` were used as individually invoked migration and offline-recovery steps on the configured phone. Do not run that whole class as a generic test suite: migration requires a private migration.json, and delivery tests send messages to the configured Telegram destination.
 
-> Use this token to access the HTTP API:
-> 8284599999:AAGbDp-Lk1IJFaoH0fuO6skp3rc-XXX_XXX
-> Keep your token secure and store it safely, it can be used by anyone to control your bot.
+The dedicated Xiaomi phone also needed MIUI autostart enabled and PowerKeeper disabled to stop its nightly process cleanup. Those are device settings, not app changes. The old SMS2Telegram installation was retained disabled for rollback.
 
-> For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+After reboot, unlock the phone once: this version uses credential-protected storage and does not support Direct Boot. Network errors can cause retries; an ambiguous Telegram response can produce a duplicate. Force-stopping or disabling the app prevents normal reception until it is enabled/opened again.
 
-Now we got the API Token: *8284599999:AAGbDp-Lk1IJFaoH0fuO6skp3rc-XXX_XXX*
+## Contributing and license
 
-### Step 2: App setup
+The original installation was based on upstream tag `1.3.0` (`2732370b8245e8c72fcb2afc06d14f063ce232f2`). This branch is rebased onto upstream `95a9ce580fe6a078e1eb36faa4d32b30506040b5` (1.3.1), adding its phone-state permission explanation while retaining our fixes and upstream history. It is not an official release by Tiger-Workshop. Please report fork-specific issues here; general upstream issues belong in the original project.
 
-From the previous step, click on the link of your new bot: *t.me/SMS2TelegramDemoBot*, and click on the big "START" button or send any message to it.
-
-Copy the API Token you obtained from previous step into the "Telegram Bot API Key" field.
-
-Click on the "Find Chat ID" button, and select your Telegram username. The "Telegram Chat ID" field will be automatically filled.
-
-Then click on "Validate and Continue" button to verify and complete the setup.
-
-## Download
-
-Although you are encouraged to build it from source code for maximum security, Play Store and APK are available.
-
-APK Download: [Releases](https://github.com/imTigger/SMS2Telegram/releases/latest)
-
-Play Store: [Play Store](https://play.google.com/store/apps/details?id=com.tigerworkshop.sms2telegram)
-
-## Build from source
-
-Just clone the project and use the latest version of Android Studio to import it.
+Licensed under MIT. The original [LICENSE.md](LICENSE.md), including Tiger-Workshop’s copyright, is unchanged. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for this fork’s data handling.
